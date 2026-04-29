@@ -1,0 +1,58 @@
+# Values para hello-api en EKS.
+#
+# Default para EKS en este lab: ALB vía Ingress (camino production-like común).
+# El Service queda interno (ClusterIP) y el tráfico externo entra por ALB.
+
+replicas: 1                       # single-node lab, una réplica alcanza
+
+image:
+  repository: 031924002934.dkr.ecr.us-east-1.amazonaws.com/hello-api
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+env:
+  APP_ENV: "eks"
+
+resources:
+  requests: { cpu: 50m, memory: 64Mi }
+  limits:   { cpu: 200m, memory: 128Mi }
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+  annotations: {}
+
+ingress:
+  enabled: true
+  className: "alb"
+  host: ""
+  annotations:
+    alb.ingress.kubernetes.io/scheme: "internet-facing"
+    alb.ingress.kubernetes.io/target-type: "ip"
+  tls: []
+
+serviceAccount:
+  create: true
+  name: hello-api-sa              # usá el mismo nombre en el Pod Identity Association
+  annotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  fsGroup: 10001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+autoscaling:
+  enabled: false                  # HPA off en single-node
+
+pdb:
+  enabled: false                  # con replicas=1 no aporta nada
+
+topologySpread:
+  enabled: false                  # off en cluster de 1 nodo
